@@ -25,7 +25,7 @@
 
 ![UV Cet](images/ex_uv_cet1.png)
 
-[実行例：自動スクロールする様子の動画](https://www.youtube.com/watch?v=tNV-A5AJE_U)
+[実行例：自動スクロールする様子の動画:YouTube](https://www.youtube.com/watch?v=tNV-A5AJE_U)
 
 次のように何も引数を付けなければ、オプションなどの使い方が表示される。
 ```
