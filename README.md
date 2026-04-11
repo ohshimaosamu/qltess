@@ -124,7 +124,7 @@ $ python ~/python_prog/ql_tesslc.py "UV Cet"
 選択番号または q を入力してください: 6
 ```
 以上を実行した時の様子
-![lightcurve](images/figure1.png)
+[lightcurve](images/figure1.png)
 
 
 # name2tic.py
