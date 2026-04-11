@@ -66,13 +66,21 @@ options:
 
 numpy, matplotlib, astropy, astroquery, lightkurve 
 
+入っていなければ、次のようにpipでインストールできる。
+
+```
+pip install numpy matplotlib astropy astroquery lightkurve
+```
+
 # 実行するディレクトリ（フォルダー）
-実行すると自動でダウンロードしたTESSの*_lc.fitsファイルは~/tess_data/ディレクトリに保存される。
-Windows PowerShellの場合は、C:\Users\YourName\tess_data\ になる
+qltess.pyを実行すると、自動でダウンロードされた TESSの*_lc.fitsファイルは、 ~/tess_data/ディレクトリに保存される。
+Windows PowerShellの場合は、C:\Users\YourName\tess_data\ になる。
+
+後述の name2tic.py を実行すればそのディレクトリを表示してくれます。
 
 # 実行例（Linux, "qltess.py"は~/python_prog/tess/に置いてある場合）
 ```
-(base) o2@o2-AsusTuf:~/work$ python3 ~/python_prog/tess/qltess.py yz_cmi
+$ python3 ~/python_prog/tess/qltess.py yz_cmi
 
 [INFO] input interpreted as SIMBAD object name: yz_cmi
 [INFO] resolved TIC: 266744225
