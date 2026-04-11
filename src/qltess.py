@@ -286,7 +286,38 @@ def robust_ylim(y, low=1.0, high=99.0, pad_frac=0.08):
     pad = (y2 - y1) * pad_frac
     return y1 - pad, y2 + pad
 
+def save_lightcurve_text_if_needed(fits_path, x, y, ylabel):
+    """
+    表示に使った光度曲線データを、元の fits ファイルと同じ場所に
+    .txt として保存する。
 
+    保存内容:
+      1行目: コメント
+      2行目以降: BJD と flux の2列
+
+    既に同名 .txt があれば何もしない。
+    """
+    fits_path = Path(fits_path)
+    txt_path = fits_path.with_suffix(".txt")
+
+    if txt_path.exists():
+        return
+
+    # コメント行
+    # 仕様に従い、PDCSAP系で表示した場合のコメントを入れる。
+    # SAPの場合も表示した flux をそのまま保存する。
+    if ylabel == "PDCSAP_FLUX":
+        header = "#BJD            flux(PDCSAP*)"
+    else:
+        header = "#BJD            flux(SAP*)"
+
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(header + "\n")
+        for xi, yi in zip(x, y):
+            f.write(f"{xi:15.8f} {yi: .10e}\n")
+
+    print(f"[INFO] saved text data: {txt_path}")
+    
 # ============================================================
 # menu
 # ============================================================
@@ -313,9 +344,16 @@ def plot_lightcurve_full(fits_path, display_name):
     """
     lc.fits の全期間を1枚の静止グラフとして表示する。
     横軸表示は BJD - 整数基準値。
+    同時に、表示に使った BJD と flux を .txt に保存する。
+    flux(PDCSAP*) の * は
+    「グラフに表示したデータと同じもの」を意味する。
+     実際には PDCSAP_FLUX を優先し、無ければ SAP_FLUX を使う。 
     """
     x, y, ylabel, bjd_base = read_lightcurve(fits_path)
     x_plot = x - bjd_base
+
+    # 表示に使った元データを保存（既存なら何もしない）
+    save_lightcurve_text_if_needed(fits_path, x, y, ylabel)
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(x_plot, y, ".", markersize=2)
@@ -333,7 +371,6 @@ def plot_lightcurve_full(fits_path, display_name):
 
     plt.tight_layout()
     plt.show()
-
 
 # ============================================================
 # scanner
