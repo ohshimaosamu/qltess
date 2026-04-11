@@ -16,13 +16,17 @@ import re
 import argparse
 import warnings
 from pathlib import Path
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 from astropy.io import fits
 from astroquery.simbad import Simbad
+
+warnings.filterwarnings(
+    "ignore",
+    message=".*tpfmodel submodule is not available without oktopus.*"
+)
 import lightkurve as lk
 
 
