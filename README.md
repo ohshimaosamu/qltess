@@ -21,7 +21,7 @@
 ```
  Windowsの場合は、コマンドプロンプトよりもWindows Power Shellで実行することをおすすめします。
 
-ある場面。複数のフレアが出現しているのがわかる。
+表示された光度曲線のある場面（スペースキーを押せばスキャンが止まる）。複数のフレアが出現しているのがわかる。
 
 ![UV Cet](images/ex_uv_cet1.png)
 
@@ -30,15 +30,9 @@
 # オプションの使い方
 次のように何も引数を付けなければ、オプションなどの使い方が表示される。
 
+オプションの -h をつけると日本語の説明が表示されます。
 （”qltess.py”が~/python_prog/tess/ディレクトリに置いてある場合）
-```
-$ python3 ~/python_prog/tess/qltess.py
-usage: qltess.py [-h] [-f] [-s SPEED] [-w WINDOW] [--intermittent]
-                 [--save-dir SAVE_DIR] [--redownload] [--data-dir DATA_DIR]
-                 target
-qltess.py: error: the following arguments are required: target
-```
-オプションの -h をつけると日本語で少し丁寧な説明になります
+
 ```
 $ python3 ~/python_prog/tess/qltess.py -h
 usage: qltess.py [-h] [-f] [-s SPEED] [-w WINDOW] [--intermittent]
