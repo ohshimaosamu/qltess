@@ -27,23 +27,23 @@
 
 [実行例：自動スクロールする様子の動画:YouTube](https://www.youtube.com/watch?v=tNV-A5AJE_U)
 
+# オプションの使い方
 次のように何も引数を付けなければ、オプションなどの使い方が表示される。
-```
-python3 qltess.py
 
-usage: qltess.py [-h] [-s SPEED] [-w WINDOW] [--intermittent]
-                    [--save-dir SAVE_DIR] [--redownload]
-                    target
+（”qltess.py”が~/python_prog/tess/ディレクトリに置いてある場合）
 ```
--hをつけると日本語で少し丁寧な説明になります
-```
-$ python ~/python_prog/tess/qltess.py -h
-/home/o2/miniconda3/lib/python3.13/site-packages/lightkurve/prf/__init__.py:7: UserWarning: Warning: the tpfmodel submodule is not available without oktopus installed, which requires a current version of autograd. See #1452 for details.
-  warnings.warn(
-usage: qltess.py [-h] [-s SPEED] [-w WINDOW] [--intermittent]
-                 [--save-dir SAVE_DIR] [--redownload]
+$ python3 ~/python_prog/tess/qltess.py
+usage: qltess.py [-h] [-f] [-s SPEED] [-w WINDOW] [--intermittent]
+                 [--save-dir SAVE_DIR] [--redownload] [--data-dir DATA_DIR]
                  target
-
+qltess.py: error: the following arguments are required: target
+```
+オプションの -h をつけると日本語で少し丁寧な説明になります
+```
+$ python3 ~/python_prog/tess/qltess.py -h
+usage: qltess.py [-h] [-f] [-s SPEED] [-w WINDOW] [--intermittent]
+                 [--save-dir SAVE_DIR] [--redownload] [--data-dir DATA_DIR]
+                 target
 TESS lc.fits quick-look downloader + scanner
 
 positional arguments:
@@ -51,11 +51,14 @@ positional arguments:
 
 options:
   -h, --help           show this help message and exit
+  -f, --full           全範囲の光度曲線を一度に表示する
   -s, --speed SPEED    スキャン速度 [day/sec] (default: 0.5)
   -w, --window WINDOW  表示窓幅 [day] (default: 1.0)
   --intermittent       間欠表示モード (0.5秒ごとに進める)
   --save-dir SAVE_DIR  sキーで保存するPNGの保存先ディレクトリ (default: snapshots)
   --redownload         既存ローカルファイルがあっても再ダウンロードする
+  --data-dir DATA_DIR  データ保存ディレクトリ (default: ~/tess_data)
+
 
 ```
 
@@ -105,15 +108,6 @@ Windows PowerShellの場合は、C:\Users\YourName\tess_data\ になる
 ![LightCurve](/images/figure1.png)
 
 
-# name2tic.py
-先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
-次にじっくりとその光度曲線を調べてみたいと思ったら収められているディレクトリをTIC番号で探さなければならない。
-これは不便なので、このソフトを作りました。
-
-変光星名などSIMBAD名を引数として与えれば、TIC番号が表示され、さらにその星のディレクトリがある場所を探し出してフルパス表示してくれます。
-
-Linux / macOS / Windows(PowerShellから使うのがおすすめ)どれでもOKのはずです。
-
 # 少し詳しく光度曲線を見たい時は、 -f オプションを使う
 (以前のplot_lcfits.pyは廃止しました。以下の説明のようにqltess.pyに統合ずみです。)
 
@@ -152,3 +146,19 @@ $ python3 ~/python_prog/tess/qltess.py yz_cmi -f
 
 このグラフは、虫めがねアイコンをクリックして、マウスで範囲を指定すれば、自由に拡大できます。
 元のスケールに戻したい時は、家マークのアイコンをクリック。
+
+# name2tic.py
+先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
+次にじっくりとそのデータファイルを調べてみたいと思ったら、収められているディレクトリをTIC番号で探さなければならない。
+しかしTIC番号で探すのは、桁数が多く不便なので、このソフトを作りました。Linux / macOS / Windows(PowerShellから使うのがおすすめ)どれでもOKのはずです。
+
+変光星名などのSIMBAD名を引数として与えれば、TIC番号が表示され、さらにその星のディレクトリがある場所を探し出してフルパス表示してくれます。
+
+```
+$ python3 ~/python_prog/tess/name2tic.py yz_cmi
+TIC 266744225
+Found directories:
+/home/o2/tess_data/TIC266744225
+
+```
+
