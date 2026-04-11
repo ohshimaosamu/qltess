@@ -3,10 +3,17 @@
 
 import sys
 import re
+import os
+import platform
+import argparse
 import subprocess
 from pathlib import Path
-from astroquery.simbad import Simbad
 
+from astroquery.simbad import Simbad
+"""
+Linux / macOS / WindowsどれでもOK
+Usage: python name2tic.py "AM Leo"
+"""
 
 def resolve_name_to_tic(target_name):
     """
@@ -44,10 +51,9 @@ def resolve_name_to_tic(target_name):
     raise RuntimeError(f"SIMBAD identifiers にTIC番号が見つかりませんでした: {target_name}")
 
 
-def locate_tic_dirs(tic_id):
+def locate_tic_dirs_unix(tic_id):
     """
-    locate を使って TICxxxx という名前のディレクトリ候補を探す。
-    返り値: 見つかったディレクトリのフルパス一覧
+    Unix系で locate を使って TICxxxx ディレクトリを探す。
     """
     target_dirname = f"TIC{tic_id}"
 
@@ -59,31 +65,91 @@ def locate_tic_dirs(tic_id):
             check=False
         )
     except FileNotFoundError:
-        raise RuntimeError("locate コマンドが見つかりません。mlocate/plocate をインストールしてください。")
+        return []
 
     if result.returncode not in (0, 1):
         raise RuntimeError(result.stderr.strip() or "locate の実行に失敗しました。")
 
     lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
-    # 同名ファイルも拾う可能性があるので、実在するディレクトリだけ残す
     dirs = []
     for line in lines:
         p = Path(line)
         if p.is_dir() and p.name == target_dirname:
             dirs.append(str(p.resolve()))
 
-    # 重複除去
-    dirs = sorted(set(dirs))
-    return dirs
+    return sorted(set(dirs))
+
+
+def recursive_find_tic_dirs(tic_id, search_roots):
+    """
+    OS非依存の再帰探索。
+    search_roots 以下を walk して TICxxxx ディレクトリを探す。
+    """
+    target_dirname = f"TIC{tic_id}"
+    found = []
+
+    for root in search_roots:
+        root_path = Path(root).expanduser()
+        if not root_path.exists() or not root_path.is_dir():
+            continue
+
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            # 一致したらそのディレクトリを記録
+            current = Path(dirpath)
+            if current.name == target_dirname:
+                found.append(str(current.resolve()))
+                # その下は探索不要ならここで continue/break も可
+                # 今回は複数候補を拾うため継続
+
+    return sorted(set(found))
+
+
+def locate_tic_dirs_cross_platform(tic_id, search_roots=None):
+    """
+    クロスプラットフォーム版。
+    - Unix系: locate が使えれば使う
+    - Windows: 再帰探索
+    - locateが無いUnix系: 再帰探索
+    """
+    if search_roots is None or len(search_roots) == 0:
+        # デフォルト探索場所
+        home = Path.home()
+        search_roots = [home]
+
+    system_name = platform.system().lower()
+
+    # Windows は locate を使わず再帰探索
+    if "windows" in system_name:
+        return recursive_find_tic_dirs(tic_id, search_roots)
+
+    # Unix系はまず locate を試す
+    try:
+        paths = locate_tic_dirs_unix(tic_id)
+        if paths:
+            return paths
+    except Exception:
+        pass
+
+    # locate が無い/見つからない場合は再帰探索
+    return recursive_find_tic_dirs(tic_id, search_roots)
 
 
 def main():
-    if len(sys.argv) != 2:
-        print('Usage: python name2tic.py "OBJECT NAME"')
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="星名からTIC番号と、そのTICフォルダの場所を調べる"
+    )
+    parser.add_argument("target_name", help='例: "AM Leo"')
+    parser.add_argument(
+        "--search-root",
+        action="append",
+        default=[],
+        help="TICフォルダ探索の開始ディレクトリ。複数指定可。"
+    )
 
-    target_name = sys.argv[1].strip()
+    args = parser.parse_args()
+
+    target_name = args.target_name.strip()
 
     try:
         tic_id = resolve_name_to_tic(target_name)
@@ -93,10 +159,17 @@ def main():
 
     print(f"TIC {tic_id}")
 
+    # 探索開始ディレクトリ
+    if args.search_root:
+        search_roots = [Path(p).expanduser() for p in args.search_root]
+    else:
+        # デフォルトはホーム以下
+        search_roots = [Path.home()]
+
     try:
-        paths = locate_tic_dirs(tic_id)
+        paths = locate_tic_dirs_cross_platform(tic_id, search_roots=search_roots)
     except Exception as e:
-        print(f"LOCATE ERROR: {e}")
+        print(f"SEARCH ERROR: {e}")
         sys.exit(1)
 
     if paths:
@@ -105,7 +178,9 @@ def main():
             print(p)
     else:
         print(f'No directory found for "TIC{tic_id}"')
-        print("必要なら先に sudo updatedb を実行してください。")
+        if "windows" not in platform.system().lower():
+            print("必要なら先に sudo updatedb を実行してください。")
+        print("必要なら --search-root で探索開始ディレクトリを指定してください。")
 
 
 if __name__ == "__main__":
