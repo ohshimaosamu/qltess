@@ -67,9 +67,63 @@ numpy, matplotlib, astropy, astroquery, lightkurve
 実行すると自動でダウンロードしたTESSの*_lc.fitsファイルは~/tess_data/ディレクトリに保存される。
 Windows PowerShellの場合は、C:\Users\YourName\tess_data\ になる
 
-# 実行例（Linux）
+# 実行例（Linux, "qltess.py"は~/python_prog/tess/に置いてある場合）
 ```
-$ python ~/python_prog/tess/qltess.py yz_cmi
+(base) o2@o2-AsusTuf:~/work$ python3 ~/python_prog/tess/qltess.py yz_cmi
+
+[INFO] input interpreted as SIMBAD object name: yz_cmi
+[INFO] resolved TIC: 266744225
+[INFO] TIC was resolved directly from SIMBAD identifiers.
+[INFO] target: TIC 266744225
+[INFO] download dir: /home/o2/tess_data/TIC266744225
+[INFO] author=SPOC: 5 entries found
+[INFO] author=SPOC: downloaded 5 files
+[INFO] author=TESS-SPOC: 2 entries found
+[INFO] author=TESS-SPOC: downloaded 2 files
+[INFO] author=QLP: 3 entries found
+[INFO] author=QLP: downloaded 3 files
+[INFO] total downloaded entries: 10
+[INFO] usable lc.fits files: 10
+
+表示する lcfits を選んでください
+--------------------------------------------------
+  1 : mastDownload/HLSP/hlsp_qlp_tess_ffi_s0007-0000000266744225_tess_v01_llc
+  2 : mastDownload/HLSP/hlsp_qlp_tess_ffi_s0034-0000000266744225_tess_v01_llc
+  3 : mastDownload/HLSP/hlsp_qlp_tess_ffi_s0088-0000000266744225_tess_v01_llc
+  4 : mastDownload/HLSP/hlsp_tess-spoc_tess_phot_0000000266744225-s0007_tess_v1_tp
+  5 : mastDownload/HLSP/hlsp_tess-spoc_tess_phot_0000000266744225-s0034_tess_v1_tp
+  6 : mastDownload/TESS/tess2019006130736-s0007-0000000266744225-0131-s
+  7 : mastDownload/TESS/tess2021014023720-s0034-0000000266744225-0204-a_fast
+  8 : mastDownload/TESS/tess2021014023720-s0034-0000000266744225-0204-s
+  9 : mastDownload/TESS/tess2025014115807-s0088-0000000266744225-0285-a_fast
+ 10 : mastDownload/TESS/tess2025014115807-s0088-0000000266744225-0285-s
+  q : 終了
+--------------------------------------------------
+選択番号または q を入力してください: 9
+```
+以上を実行した時の様子
+![LightCurve](/images/figure1.png)
+
+
+# name2tic.py
+先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
+次にじっくりとその光度曲線を調べてみたいと思ったら収められているディレクトリをTIC番号で探さなければならない。
+これは不便なので、このソフトを作りました。
+
+変光星名などSIMBAD名を引数として与えれば、TIC番号が表示され、さらにその星のディレクトリがある場所を探し出してフルパス表示してくれます。
+
+Linux / macOS / Windows(PowerShellから使うのがおすすめ)どれでもOKのはずです。
+
+# 少し詳しく光度曲線を見たい時は、 -f オプションを使う
+(以前のplot_lcfits.pyは廃止しました。以下の説明のようにqltess.pyに統合ずみです。)
+
+先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
+じっくりとその光度曲線を調べてみたいと思ったら、今度は -f オプションを付けて再度"qltess.py"を使えば、
+全観測期間一括で光度曲線を表示してくれます。
+
+特定の期間だけ表示させたい時は、最後に示すように虫めがねアイコンを使う方法があります。
+```
+$ python3 ~/python_prog/tess/qltess.py yz_cmi -f
 [INFO] input interpreted as SIMBAD object name: yz_cmi
 [INFO] resolved TIC: 266744225
 [INFO] TIC was resolved directly from SIMBAD identifiers.
@@ -91,27 +145,10 @@ $ python ~/python_prog/tess/qltess.py yz_cmi
  10 : mastDownload/TESS/tess2025014115807-s0088-0000000266744225-0285-s
   q : 終了
 --------------------------------------------------
-選択番号または q を入力してください: 6
-
+選択番号または q を入力してください: 9
 ```
-以上を実行した時の様子
-![LightCurve](/images/figure1.png)
+![FullLightCurve](/images/ex_yz_cmi.png)
+ものすごいフレアの嵐ですね！
 
-
-# name2tic.py
-先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
-次にじっくりとその光度曲線を調べてみたいと思ったら収められているディレクトリをTIC番号で探さなければならない。
-これは不便なので、このソフトを作りました。
-
-変光星名などSIMBAD名を引数として与えれば、TIC番号が表示され、さらにその星のディレクトリがある場所を探し出してフルパス表示してくれます。
-
-Linux / macOS / Windows(PowerShellから使うのがおすすめ)どれでもOKのはずです。
-
-# plot_lcfits.py
-
-先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
-じっくりとその光度曲線を調べてみたいと思ったら、もうql_tesslcを使わず、この"plot_lcfits.py"を使えば、
-光度曲線を表示してくれます。
-
-このグラフは、虫めがねアイコンをクリックしてマウスで範囲指定すれば、自由に拡大できます。
+このグラフは、虫めがねアイコンをクリックして、マウスで範囲を指定すれば、自由に拡大できます。
 元のスケールに戻したい時は、家マークのアイコンをクリック。
