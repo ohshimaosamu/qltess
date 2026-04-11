@@ -1,4 +1,4 @@
-# qltess
+# qltess.py
 天体名からTESSの測光データを探してダウンロードし、光度曲線を表示し、自動でスクロールする。古いql_tesslcの更新版
 
 読み方は「キューエルテス」くらいでしょうか。
@@ -27,7 +27,7 @@
 
 [実行例：自動スクロールする様子の動画:YouTube](https://www.youtube.com/watch?v=tNV-A5AJE_U)
 
-# オプションの使い方
+## オプションの使い方
 
 オプションの -h をつけると日本語の説明が表示されます。
 （”qltess.py”が~/python_prog/tess/ディレクトリに置いてある場合）
@@ -55,7 +55,7 @@ options:
 
 ```
 
-# 必要なpythonライブラリ
+## 必要なpythonライブラリ
 
 numpy, matplotlib, astropy, astroquery, lightkurve 
 
@@ -65,14 +65,14 @@ numpy, matplotlib, astropy, astroquery, lightkurve
 pip install numpy matplotlib astropy astroquery lightkurve
 ```
 
-# データが保存されるディレクトリ（フォルダー）
+## データが保存されるディレクトリ（フォルダー）
 qltess.pyを実行すると、 TESSの*_lc.fitsファイルは自動でダウンロードされ、 ~/tess_data/のTIC番号のついたサブディレクトリに保存される。
 
 Windows PowerShellの場合は、C:\Users\YourName\tess_data\ になる。
 
 後述の name2tic.py を実行すればそのディレクトリを表示してくれます。
 
-# 実行例（Linux, "qltess.py"は~/python_prog/tess/に置いてある場合）
+## 実行例（Linux, "qltess.py"は~/python_prog/tess/に置いてある場合）
 ```
 $ python3 ~/python_prog/tess/qltess.py yz_cmi
 
@@ -110,7 +110,7 @@ $ python3 ~/python_prog/tess/qltess.py yz_cmi
 ![LightCurve](/images/figure1.png)
 
 
-# 少し詳しく光度曲線を見たい時は、 -f オプションを使う
+## 少し詳しく光度曲線を見たい時は、 -f オプションを使う
 (以前のplot_lcfits.pyは廃止しました。以下の説明のようにqltess.pyに統合ずみです。)
 
 先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
@@ -148,6 +148,17 @@ $ python3 ~/python_prog/tess/qltess.py yz_cmi -f
 
 このグラフは、虫めがねアイコンをクリックして、マウスで範囲を指定すれば、自由に拡大できます。
 元のスケールに戻したい時は、家マークのアイコンをクリック。
+### 表示に使った光度曲線データをテキストファイルに自動保存する
+データは、元の fits ファイルと同じ場所に*.txt として自動保存されます。ただし、既に同名 .txt があれば何もしない
+
+　　保存内容:
+  
+      1行目: コメント
+      
+      2行目以降: BJD と flux の2列
+
+#
+
 
 # name2tic.py
 先に一度ql_tesslcを使ったら、その星のlcfitsファイルはすでに手元にダウンロードされています。
