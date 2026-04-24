@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
+  履歴：2026年04月19日現在
   Linux / macOS / Windows で動く
   データ保存先の既定は ~/tess_data
     --data-dir で保存先変更可能
   既存 *lc.fits があればダウンロード省略
     --redownload で再ダウンロード
-  通常はスクロールスキャン
-    -f または --full で 観測全範囲をグラフ表示
+  デフォルトではスクロールスキャンモード、fキーで観測全範囲をグラフ表示に切り替えできる
+    -f または --full で 観測全範囲をグラフ表示。mキーでスキャンモードへ移行。
 """
 
 import sys
@@ -345,15 +346,18 @@ def plot_lightcurve_full(fits_path, display_name):
     lc.fits の全期間を1枚の静止グラフとして表示する。
     横軸表示は BJD - 整数基準値。
     同時に、表示に使った BJD と flux を .txt に保存する。
-    flux(PDCSAP*) の * は
-    「グラフに表示したデータと同じもの」を意味する。
-     実際には PDCSAP_FLUX を優先し、無ければ SAP_FLUX を使う。 
+
+    戻り値:
+      "scan" : 表示中に s キーが押され、スキャンモードへ切り替え要求
+      None   : そのまま終了
     """
     x, y, ylabel, bjd_base = read_lightcurve(fits_path)
     x_plot = x - bjd_base
 
     # 表示に使った元データを保存（既存なら何もしない）
     save_lightcurve_text_if_needed(fits_path, x, y, ylabel)
+
+    mode_request = {"next": None}
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(x_plot, y, ".", markersize=2)
@@ -369,8 +373,27 @@ def plot_lightcurve_full(fits_path, display_name):
     if ylim is not None:
         ax.set_ylim(*ylim)
 
+    info_text = ax.text(
+        0.99, 0.98,
+        "m: scan mode   q/ESC: close",
+        transform=ax.transAxes,
+        ha="right", va="top",
+        fontsize=9,
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.5)
+    )
+
+    def on_key(event):
+        if event.key == "m":
+            mode_request["next"] = "scan"
+            plt.close(fig)
+        elif event.key in ("q", "escape"):
+            plt.close(fig)
+
+    fig.canvas.mpl_connect("key_press_event", on_key)
+
     plt.tight_layout()
     plt.show()
+    return mode_request["next"]
 
 # ============================================================
 # scanner
@@ -379,6 +402,7 @@ def plot_lightcurve_full(fits_path, display_name):
 class LCScanner:
     def __init__(
         self,
+        fits_path,
         x,
         y,
         ylabel,
@@ -392,6 +416,7 @@ class LCScanner:
         target_label="",
         tic_id=None
     ):
+        self.fits_path = Path(fits_path)
         self.x = x
         self.y = y
         self.ylabel = ylabel
@@ -407,6 +432,7 @@ class LCScanner:
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.target_label = target_label
         self.tic_id = tic_id
+        self.next_mode = None
 
         self.tmin = float(np.min(self.x))
         self.tmax = float(np.max(self.x))
@@ -444,7 +470,7 @@ class LCScanner:
 
         self.help_text = self.ax.text(
             0.99, 0.98,
-            "space: pause/resume  s: save(when paused)  ←/→: move  q: close",
+            "space: pause/resume  s: save(when paused)  f: full view  ←/→: move  q: close",
             transform=self.ax.transAxes,
             ha="right", va="top",
             fontsize=9,
@@ -485,12 +511,17 @@ class LCScanner:
         self.fig.canvas.draw_idle()
         print(f"[INFO] saved: {out}")
 
+    def request_full_mode(self):
+        self.next_mode = "full"
+        self.finished = True
+        plt.close(self.fig)
+
     def on_key(self, event):
         if event.key == " ":
             self.paused = not self.paused
             self.ax.set_title(self.make_title())
             if self.paused:
-                self.status_text.set_text("PAUSED  (space: resume, s: save)")
+                self.status_text.set_text("PAUSED  (space: resume, s: save, f: full)")
             else:
                 self.status_text.set_text("")
             self.fig.canvas.draw_idle()
@@ -498,6 +529,9 @@ class LCScanner:
         elif event.key == "s":
             if self.paused:
                 self.save_current_window()
+
+        elif event.key == "f":
+            self.request_full_mode()
 
         elif event.key in ("q", "escape"):
             self.finished = True
@@ -530,7 +564,7 @@ class LCScanner:
             if self.current_left > max_left:
                 self.current_left = max_left
                 self.paused = True
-                self.status_text.set_text("END  (left/right key to inspect, s: save, q/ESC to close)")
+                self.status_text.set_text("END  (left/right key to inspect, s: save, f: full, q/ESC to close)")
                 self.ax.set_title(self.make_title())
             else:
                 self.status_text.set_text("")
@@ -544,11 +578,12 @@ class LCScanner:
         print("操作:")
         print("  space : 一時停止 / 再開")
         print("  s     : 一時停止中の現在窓をPNG保存")
+        print("  f     : 全期間1画面表示へ切り替え")
         print("  ← →   : 表示窓を少し戻す / 進める")
         print("  q,ESC : このプロットを閉じる")
         plt.tight_layout()
         plt.show()
-
+        return self.next_mode
 
 def scan_lightcurve(
     fits_path,
@@ -563,7 +598,11 @@ def scan_lightcurve(
     x, y, ylabel, bjd_base = read_lightcurve(fits_path)
     x_plot = x - bjd_base
 
+    # デフォルト実行時でも、選択された sector のデータを自動保存する
+    save_lightcurve_text_if_needed(fits_path, x, y, ylabel)
+
     scanner = LCScanner(
+        fits_path=fits_path,
         x=x_plot,
         y=y,
         ylabel=ylabel,
@@ -576,7 +615,7 @@ def scan_lightcurve(
         target_label=target_label,
         tic_id=tic_id
     )
-    scanner.show()
+    return scanner.show()
 
 
 # ============================================================
@@ -709,19 +748,26 @@ def main():
         subdir_name, fits_path = entries[idx - 1]
 
         try:
-            if args.full:
-                plot_lightcurve_full(fits_path, subdir_name)
-            else:
-                scan_lightcurve(
-                    fits_path=fits_path,
-                    subdir_name=subdir_name,
-                    window_days=args.window,
-                    speed_days_per_sec=args.speed,
-                    intermittent=args.intermittent,
-                    save_dir=args.save_dir,
-                    target_label=target_input,
-                    tic_id=tic_id
-                )
+            next_mode = "full" if args.full else "scan"
+
+            while True:
+                if next_mode == "full":
+                    next_mode = plot_lightcurve_full(fits_path, subdir_name)
+                else:
+                    next_mode = scan_lightcurve(
+                        fits_path=fits_path,
+                        subdir_name=subdir_name,
+                        window_days=args.window,
+                        speed_days_per_sec=args.speed,
+                        intermittent=args.intermittent,
+                        save_dir=args.save_dir,
+                        target_label=target_input,
+                        tic_id=tic_id
+                    )
+
+                if next_mode not in ("full", "scan"):
+                    break
+
             shown_flags[idx - 1] = True
         except Exception as e:
             print(f"表示に失敗しました: {e}")
